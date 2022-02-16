@@ -162,7 +162,7 @@ func main() {
 
 程序5：
 ```
-# 不明确的类型产生内存逃逸，一般为interface参数的函数
+# 有人说不明确的类型产生内存逃逸，一般为interface参数的函数
 package main
 
 import "fmt"
@@ -174,6 +174,82 @@ func main() {
 $ go build -gcflags '-m -l' -o main5 main5.go
 ./main5.go:6:13: ... argument does not escape
 ./main5.go:6:14: "hello 程序猿编码" escapes to heap
+```
+
+程序6：
+```
+# 虽然是不明确类型，a也不会产生内存逃逸
+package main
+
+//go:noinline
+func test(you interface{}) interface{} {
+   return you
+}
+
+func main() {
+   a := 1
+   test(a)
+}
+```
+
+程序7：
+```
+# fmt产生内存逃逸的是内部调用了reflect，因为interface的代码如果需要找到原来的类型都是使用reflect来拿到原始类型的
+
+package main
+
+import "reflect"
+
+func main() {
+   y := 2
+   _ = stackIt7(&y) // pass y down the stack as a pointer
+
+   test := 3
+   reflect.TypeOf(test).Kind()
+}
+
+//go:noinline
+func stackIt7(y *int) int {
+   res := *y * 2
+   return res
+}
+
+```
+结果是：
+```
+./main.go:15:15: y does not escape
+./main.go:11:18: test escapes to heap
+```
+
+程序8：
+```
+# 使用指针传值导致的内存逃逸，可能更加耗时
+# 因为这里是测试数据量较小的chan传输，如果数据量大的时候可能结果不一样了
+# 下面这个测试程序可以通过注释不同的代码来对比
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+//var c = make(chan t, 1024)
+var c = make(chan *t, 1024)
+type t struct {
+    a uint
+    b uint
+}
+
+func main() {
+    start := time.Now()
+    for i := 0; i < 1000; i++ {
+        b := t{a:3, b:5}
+        c <- &b
+        //c <- b
+    }
+    elapsed := time.Since(start)
+    fmt.Println(elapsed)
+}
 ```
 
 # 三色标记
