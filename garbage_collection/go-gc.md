@@ -71,16 +71,24 @@ page的大小可变，单个页面作为第一个链表，两个或者k个合并
 回收的时候需要判断page集合是否是连续的，只有是连续k个page的才能放到第k个链表中，否则就需要按需拆开存储，最终判断是否过多cache，决定是否给os回收。
 
 # 逃逸分析
+在go中我们没有明确的知道内存到底是使用栈还是使用堆，而是go在编译阶段就确定了内存到底是使用哪部分内存。
 
+内存逃逸指的是本来是分配栈内存的，但是会导致程序出错，所以需要从栈逃逸到堆,，所以在golang中，大部分都是使用的栈，因为大部分数据都是转瞬即逝的，所以需要保证不要爆栈，好在linux默认都是由8M的
 
-
-内存逃逸指的是从栈逃逸到堆，所以在golang中，大部分都是使用的栈，因为大部门数据都是转瞬即逝的，所以需要保证不要爆栈，好在linux默认都是由8M的
+内存逃逸原则
+```
+1、如果函数外部没有引用，则优先放到栈中；
+2、如果函数外部存在引用，则必定放到堆中；
+```
 
 程序1
 ```
-func main1() {
+package main
+
+func main() {
    _ = stackIt()
 }
+
 //go:noinline
 func stackIt() int {
    y := 2
@@ -90,9 +98,12 @@ func stackIt() int {
 
 程序2
 ```
-func main2() {
+package main
+
+func main() {
    _ = stackIt2()
 }
+
 //go:noinline
 func stackIt2() *int {
    y := 2
@@ -103,7 +114,9 @@ func stackIt2() *int {
 
 程序3
 ```
-func main3() {
+package main
+
+func main() {
    y := 2
    _ = stackIt3(&y) // pass y down the stack as a pointer
 }
@@ -119,46 +132,48 @@ func stackIt3(y *int) int {
 ```
 go build -gcflags '-m -l'
 ```
-
-并且检测对应的耗时，gc肯定会带来一些耗时的，测试程序如下
-
-// todo
-
+结果如下：
 ```
-type BigStruct struct {
-   A, B, C int
-   D, E, F string
-   G, H, I bool
-}
+程序1：
+无
+# 在栈中分配内存
 
-//go:noinline
-func CreateCopy() BigStruct {
-   return BigStruct{
-      A: 123, B: 456, C: 789,
-      D: "ABC", E: "DEF", F: "HIJ",
-      G: true, H: true, I: true,
-   }
-}
+程序2：
+./main2.go:10:4: moved to heap: res
+# 对象的变量已经超出当前的作用的范围了，此时就会逃逸到堆
 
-//go:noinline
-func CreatePointer() *BigStruct {
-   return &BigStruct{
-      A: 123, B: 456, C: 789,
-      D: "ABC", E: "DEF", F: "HIJ",
-      G: true, H: true, I: true,
-   }
-}
+程序3：
+./main3.go:9:15: y does not escape
+# 假如变量在父接口生成后传输给了子接口，但是子接口依然是在父接口内部的的生命周期里面，就不会逃逸到堆
+```
+
+程序4:
+```
+# 大内存分配也会产生内存逃逸
+package main
 
 func main() {
-    cnt := 20000000
-    //for i := 0; i < cnt; i++ {
-    //    _ = CreateCopy()
-    //}
-
-    for i := 0; i < cnt; i++ {
-        _ = CreatePointer()
-    }
+	s := make([]int, 1000, 1000)
+   for index, _ := range s {
+      s[index] = index
+   }
 }
+```
+
+程序5：
+```
+# 不明确的类型产生内存逃逸，一般为interface参数的函数
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("hello 程序猿编码")
+}
+
+$ go build -gcflags '-m -l' -o main5 main5.go
+./main5.go:6:13: ... argument does not escape
+./main5.go:6:14: "hello 程序猿编码" escapes to heap
 ```
 
 # 三色标记
