@@ -162,7 +162,7 @@ func main() {
 
 程序5：
 ```
-# 有人说不明确的类型产生内存逃逸，一般为interface参数的函数
+# 有人说不明确的类型产生内存逃逸，一般为interface参数的函数（不准确）
 package main
 
 import "fmt"
@@ -252,6 +252,66 @@ func main() {
 }
 ```
 
+程序9：
+```
+# 程序最后返回的时候发生了copy，最终没有对象引用i，故i没有发生逃逸
+package main
+
+type obj struct {
+   M *int
+}
+
+func main() {
+   var i int
+   refs(&i)
+}
+
+func refs9(t *int) (ans obj) {
+   ans.M = t
+   return ans
+}
+```
+
+程序10：
+```
+# i发生逃逸，myObj不逃逸。myObj一直都是在main的作用域里面，i也是在main的作用域中，这里是i被引用之后却没有返回到main的作用域，go没有识别出来。
+package main
+
+type obj struct {
+   M *int
+}
+
+func main() {
+   var i int
+   var myObj Obj
+   refs(&i, &obj)
+}
+
+func refs10(t *int, ans *obj) {
+   ans.M = t
+}
+```
+
+程序11：
+```
+package main
+
+type obj struct {
+   M *int
+}
+
+func main() {
+   var i int
+   refs(&i)
+}
+
+func refs11(t *int) *obj {
+   return &obj{
+      M = t
+   }
+}
+```
+
 # 三色标记
 
 三色标记法的三种颜色：
@@ -309,7 +369,6 @@ writePointer(slot, ptr)
 gc的[源码](https://github.com/golang/go/blob/master/src/runtime/mgc.go)大致流程如下
 
 ![](./image/gc%20function.png)
-
 
 # 参考
 
