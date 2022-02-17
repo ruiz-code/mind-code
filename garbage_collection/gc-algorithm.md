@@ -159,7 +159,7 @@ sweep_phase() {
 (2) 不是解决办法的延迟清理技术：即等到没有内存可以分配的时候才进行清理内存，虽然可以在前期减少mutator减少最大的暂停时间，但是后期的清理会大大增加清理的负担。
 
 # gc引用计数法
-如python就是使用了这个算法，请见另外一篇学习笔记
+如python就是使用了这个算法，[请见另外一篇学习笔记](https://ruiz-code.github.io/mind-code/garbage_collection/python-gc)
 
 # gc复制算法
 将内存分为两个一模一样大小的空间，当From空间被占满的时候，复制到To空间去，同时也会递归复制引用的子对象，通过复制算法，做到了没有碎片的问题，因为copy过程中又重新整理了一下内存布局。
@@ -243,7 +243,7 @@ void set_forwarding_ptr() {
         if (scan.mark == TRUE)
             scan.forwarding = new_address;
             new_address += scan.size;
-    scan += scan.size;
+        scan += scan.size;
 }
 
 adjust_ptr(){
@@ -255,7 +255,7 @@ adjust_ptr(){
         if(scan.mark == TRUE)
             for(child : children(scan))
                 *child = (*child).forwarding;
-    scan += scan.size
+        scan += scan.size
 }
 ```
 
@@ -328,4 +328,4 @@ adjust_ptr(){
 2. 列车垃圾回收算法：对于不同大小的内存再进行预划分，隔离分配回收。对于我们编程体验来讲，大部队堆上面的都很容易回收，并且占用内存小的比较多，所以这也是一个优化点。
 
 # 增量式gc
-如golang使用的三色标记算法，请见另外一篇学习笔记
+如golang使用的三色标记算法，[请见另外一篇学习笔记](https://ruiz-code.github.io/mind-code/garbage_collection/go-gc)
