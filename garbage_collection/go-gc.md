@@ -35,6 +35,7 @@ tcmalloc缓存有两种模式可以选择，以减少竞争：
 对于per-thread caching，是维护了二维链表
 第一维是标记竖链表内存大小，例如8 16 24 32 ...
 第二维是固定内存块，当程序来拿内存的时候通过取最小的可用的内存块，如果对应的竖链接的内存块已经没了，要么从middle获取新的内存，要么就是拿更大的内存块，前者优先级高。
+
 ![](./image/Legacy%20Per-Thread-mode.png)
 
 具体数值可以见[链接](https://github.com/google/tcmalloc/blob/master/tcmalloc/size_classes.cc),下面截图了部分数据
@@ -340,9 +341,11 @@ func refs11(t *int) *obj {
 写入数据与跟gc的并发问题产生错误识别垃圾或者未及时回收垃圾的情况如下：
 
 1. 写入的过程中指针引用被改变了，导致gc没有办法对灰色的节点的子节点进行标记
+
 ![](./image/错误回收.png)
 
 2. 当被标记为灰色的时候，灰色的内存变量不使用的时候，当然这个失误可以在下一次gc过程中被检测出来
+
 ![](./image/产生垃圾.png)
 
 ### Dijkstra Write barrier
@@ -351,7 +354,9 @@ writePointer(slot, ptr):
     shade(ptr)
     *slot = ptr
 ```
+
 ![](./image/Dijkstra%20Write%20barrier.png)
+
 通过这种办法可以保证强三色不变形：黑色对象不会指向白色对象，只会指向灰色对象或者黑色对象
 
 被解引用的对象，在下次gc过程中可以被回收。
