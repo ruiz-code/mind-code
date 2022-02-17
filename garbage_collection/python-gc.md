@@ -207,3 +207,79 @@ typedef struct _object {
 4. 将可到达对象、不可到达对象分别链接到不同链表，最终将不可到达对象回收掉，即完成循环对象的垃圾回收
 
 ![](./image/loop4.png)
+
+```
+# 循环引用通过del删除也没有办法删除掉，除非程序直接退出或者主动调用gc
+import time
+
+class A:
+    def __init__(self):
+        print("Object A Created")
+
+    def __del__(self):
+        print("Object A Destroyed")
+
+class B:
+    def __init__(self):
+        print("Object B Created")
+
+    def __del__(self):
+        print("Object B Destroyed")
+
+#creating two objects
+a = A()
+b = B()
+
+#setting up circular reference
+a.b = b
+b.a = a
+
+#deleting objects
+del a
+del b
+
+time.sleep(3)
+
+import gc
+gc.collect()
+
+time.sleep(3)
+```
+
+```
+# 使用弱引用
+import weakref
+import time
+
+class A:
+    def __init__(self):
+        print("Object A Created")
+
+    def __del__(self):
+        print("Object A Destroyed")
+
+class B:
+    def __init__(self):
+        print("Object B Created")
+
+    def __del__(self):
+        print("Object B Destroyed")
+
+#creating two objects
+a = A()
+b = B()
+
+#setting up weak circular reference
+a.b = weakref.ref(b)
+b.a = weakref.ref(a)
+
+#deleting objects
+del a
+del b
+
+time.sleep(3)
+```
+
+python是才3.4开始接近循环引用问题的，[官方关于循环引用的链接](https://www.python.org/dev/peps/pep-0442/)
+
+![](./image/cir.PNG)

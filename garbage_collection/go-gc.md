@@ -4,13 +4,15 @@
 
 golang的垃圾回收机制是无分代，不整理，并发的三色标记清除算法
 
-* 没有碎片整理：因为使用的tcmalloc算法，基本上没有碎片真理问题
+* 没有碎片整理：因为使用的tcmalloc算法，基本上没有碎片整理问题
 * 分代算法：分代算法是基于存活时间长短进行分代，然后减少了存储对象的检查频率。但是由于golang有变量逃逸到堆的算法，而大部分变量都是分配之后立马就需要回收，所以都放在栈上面，很方便的回收调。而逃逸到堆的就需要gc的参与，由此可见分代的优势其实不是那么明显了
 * 并发gc：跟用户的代码同时运行，减少了最大的停顿时间。
 
 # tcmalloc算法
 ## 简介
 tcmalloc(Thread Cacheing Malloc)是google基于c/c++实现的一套高性能，并行的内存分配开源框架。
+
+内核也有kmalloc以及vmalloc的接口，但[tcmalloc是一个开源库](https://github.com/google/tcmalloc)
 
 ## 概要
 
@@ -263,7 +265,7 @@ type obj struct {
 
 func main() {
    var i int
-   refs(&i)
+   refs9(&i)
 }
 
 func refs9(t *int) (ans obj) {
@@ -283,8 +285,8 @@ type obj struct {
 
 func main() {
    var i int
-   var myObj Obj
-   refs(&i, &obj)
+   var myObj obj
+   refs10(&i, &myObj)
 }
 
 func refs10(t *int, ans *obj) {
@@ -294,6 +296,7 @@ func refs10(t *int, ans *obj) {
 
 程序11：
 ```
+# i move to heap, 因为返回的obj是指针，到了堆上去了
 package main
 
 type obj struct {
@@ -302,14 +305,15 @@ type obj struct {
 
 func main() {
    var i int
-   refs(&i)
+   refs11(&i)
 }
 
 func refs11(t *int) *obj {
    return &obj{
-      M = t
+      M: t,
    }
 }
+
 ```
 
 # 三色标记
