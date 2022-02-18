@@ -1,6 +1,6 @@
 # 多种gc算法简介
 
-本文是从书籍[《垃圾回收的算法与实现》](https://book.douban.com/subject/26821357/)学习总结得到
+本文是从书籍[《垃圾回收的算法与实现》](https://book.douban.com/subject/26821357/)学习总结得到，[PDB版本](https://yun.weicheng.men/Book/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%9A%84%E7%AE%97%E6%B3%95%E4%B8%8E%E5%AE%9E%E7%8E%B0.pdf)
 
 ![book](./image/gc-book.png)
 
